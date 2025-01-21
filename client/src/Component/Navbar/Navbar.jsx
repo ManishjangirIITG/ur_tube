@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import logo from "./logo.ico"
 import "./Navbar.css"
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, generatePath } from "react-router-dom"
+import { Link, generatePath, useHistory } from "react-router-dom"
 import { RiVideoAddLine } from "react-icons/ri"
 import { IoMdNotificationsOutline } from "react-icons/io"
 import { BiUserCircle } from "react-icons/bi"
@@ -14,19 +14,23 @@ import { useGoogleLogin,googleLogout } from '@react-oauth/google';
 import { setcurrentuser } from '../../action/currentuser';
 
 import {jwtDecode} from "jwt-decode"
+
 const Navbar = ({ toggledrawer, seteditcreatechanelbtn }) => {
     const [authbtn, setauthbtn] = useState(false)
     const [user, setuser] = useState(null)
     const [profile, setprofile] = useState([])
+    // const history = useHistory();
+    // const currentUser = useSelector(())
     const dispatch = useDispatch()
    
 
     const currentuser = useSelector(state => state.currentuserreducer);
     // console.log(currentuser)
-    const successlogin = () => {
+    const successlogin = (profile) => {
+        console.log("profile: ",profile);
         if (profile.email) {
-            dispatch(login({ email: profile.email }))
             console.log(profile.email)
+            dispatch(login({ email: profile.email }))
         }
     }
     // console.log(currentuser)
@@ -40,7 +44,10 @@ const Navbar = ({ toggledrawer, seteditcreatechanelbtn }) => {
     // }
 
     const google_login = useGoogleLogin({
-        onSuccess: tokenResponse => setuser(tokenResponse),
+        onSuccess: tokenResponse => {
+            console.log("logging token: ",tokenResponse)
+            setuser(tokenResponse)
+        },
         
         onError: (error) => console.log("Login Failed", error)
     });
@@ -56,9 +63,13 @@ const Navbar = ({ toggledrawer, seteditcreatechanelbtn }) => {
                 })
                     .then((res) => {
                         setprofile(res.data)
-                        successlogin()
-                        // console.log(res.data)
+                        console.log(res.data)
+                        console.log("Profile1:",res.data);
+                        successlogin(res.data);
                     })
+                    .catch((error)=>{
+                        console.log("Error fetching user info:", error);
+                    });
 
             }
         },
@@ -71,12 +82,14 @@ const Navbar = ({ toggledrawer, seteditcreatechanelbtn }) => {
     }
     useEffect(()=>{
         const token=currentuser?.token;
+        console.log(token)
         if(token){
             const decodetoken=jwtDecode(token)
             if(decodetoken.exp *1000 <new Date().getTime()){
                 logout()
             }
         }
+        console.log(JSON.parse(localStorage.getItem("Profile")));
         dispatch(setcurrentuser(JSON.parse(localStorage.getItem("Profile"))))
   },[currentuser?.token,dispatch]
 )

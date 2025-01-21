@@ -13,7 +13,11 @@ export const login=(authdata)=>API.post("/user/login",authdata);
 export const updatechaneldata=(id,updatedata)=>API.patch(`/user/update/${id}`,updatedata)
 export const fetchallchannel=()=>API.get("/user/getallchannel");
 
-export const uploadvideo=(filedata,fileoption)=>API.post("/video/uploadvideo",filedata,fileoption)
+export const uploadvideo=(filedata)=>API.post("/video/uploadvideo",filedata,{
+    headers: {
+        'Content-Type': 'multipart/form-data'
+    }
+});
 export const getvideos=()=>API.get("/video/getvideos");
 export const likevideo=(id,Like)=>API.patch(`/video/like/${id}`,{Like});
 export const viewsvideo=(id)=>API.patch(`/video/view/${id}`);

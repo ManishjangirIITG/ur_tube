@@ -9,6 +9,7 @@ import upload from "../Helper/filehelper.js";
 import auth  from "../middleware/auth.js"
 const routes=express.Router();
 
+
 routes.post("/uploadvideo",auth,upload.single("file"),uploadvideo)
 
 routes.get("/getvideos",getallvideos)

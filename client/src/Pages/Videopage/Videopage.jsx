@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import "./Videopage.css"
 import moment from 'moment'
 import Likewatchlatersavebtns from './Likewatchlatersavebtns'
@@ -8,65 +8,47 @@ import Comment from '../../Component/Comment/Comment'
 import { viewvideo } from '../../action/video'
 import { addtohistory } from '../../action/history'
 import { useSelector,useDispatch } from 'react-redux'
+import 'video.js/dist/video-js.css';
+import videojs from 'video.js'
 const Videopage = () => {
     const { vid } = useParams();
     const dispatch=useDispatch()
     const vids=useSelector((state)=>state.videoreducer)
-    // const vids = [
-    //     {
-    //         _id: 1,
-    //         video_src: vidd,
-    //         chanel: "wvjwenfj3njfwef",
-    //         title: "video 1",
-    //         uploader: "abc",
-    //         description: "description of video 1"
-    //     },
-    //     {
-    //         _id: 1,
-    //         video_src: vidd,
-    //         chanel: "wvjwenfj3njfwef",
-    //         title: "video 1",
-    //         uploader: "abc",
-    //         description: "description of video 1"
-    //     },
-    //     {
-    //         _id: 2,
-    //         video_src: vidd,
-    //         chanel: "wvjwenfj3njfwef",
-    //         title: "video 2",
-    //         uploader: "abc",
-    //         description: "description of video 2"
-    //     },
-    //     {
-    //         _id: 3,
-    //         video_src: vidd,
-    //         chanel: "wvjwenfj3njfwef",
-    //         title: "video 3",
-    //         uploader: "abc",
-    //         description: "description of video 3"
-    //     },
-    //     {
-    //         _id: 4,
-    //         video_src: vidd,
-    //         chanel: "wvjwenfj3njfwef",
-    //         title: "video 4",
-    //         uploader: "abc",
-    //         description: "description of video 4"
-    //     },
-    // ]
-    // console.log( vids)
-    const vv = vids?.data.filter((q) => q._id === vid)[0]
-   
+    const videoRef = useRef(null);
+    const playerRef = useRef(null);
+    const vv = vids?.data.filter((q) => q._id === vid)[0];
     const currentuser = useSelector(state => state.currentuserreducer);
+
+    useEffect(()=>{
+        if(videoRef.current){
+            playerRef.current = videojs(videoRef.current,{
+                controls: true,
+                autoplay: false,
+                preload: 'auto',
+                sources: [
+                    {src: `http://localhost:5000/uploads/${vv?.filepath}`,
+                    type: `application/x-mpegURL`,},
+                ],
+            });
+        }
+
+        return () =>{
+            if(playerRef.current){
+                playerRef.current.dispose();
+            }
+        };
+    },[vv]);
+
     const handleviews=()=>{
         dispatch(viewvideo({id:vid}))
-    }
+    };
     const handlehistory=()=>{
         dispatch(addtohistory({
             videoid:vid,
             viewer:currentuser?.result._id,
-        }))
-    }
+        })
+    );
+    };
     useEffect(()=>{
         if(currentuser){
             handlehistory();

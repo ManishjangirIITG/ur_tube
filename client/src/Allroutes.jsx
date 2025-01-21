@@ -9,6 +9,8 @@ import Likedvideo from './Pages/Likedvideo/Likedvideo'
 import Watchhistory from './Pages/Watchhistory/Watchhistory'
 import Watchlater from './Pages/Watchlater/Watchlater'
 import Yourvideo from './Pages/Yourvideo/Yourvideo'
+import Videoupload from './Pages/Videoupload/Videoupload'; // Import the Videoupload component
+
 const Allroutes = ({seteditcreatechanelbtn,setvideouploadpage}) => {
   return (
     <Routes>
@@ -21,6 +23,7 @@ const Allroutes = ({seteditcreatechanelbtn,setvideouploadpage}) => {
         <Route path='/Watchlater' element={<Watchlater/>}/>
         <Route path='/Yourvideo' element={<Yourvideo/>}/>
         <Route path='/channel/:cid' element={<Channel seteditcreatechanelbtn={seteditcreatechanelbtn} setvideouploadpage={setvideouploadpage}/>}/>
+        <Route path='/Videoupload' element={<Videoupload setvideouploadpage={setvideouploadpage} />} /> {/* Add the route for Videoupload */}
     </Routes>
   )
 }
