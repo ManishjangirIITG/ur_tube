@@ -32,14 +32,14 @@ const VideoList = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
       {videos.map((video) => (
-        <Link to={`/uploads/${video._id}`} key={video._id} className="hover:opacity-90">
+        <Link to={`${video.filepath}`} key={video._id} className="hover:opacity-90">
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <video 
               className="w-full h-48 object-cover"
               preload="metadata"
             >
               <source 
-                src={`http://localhost:5000/uploads/stream/${video.filename}`}
+                src={`http://localhost:5000${video.filepath}`}
                 type={video.filetype || 'video/mp4'}
               />
             </video>
