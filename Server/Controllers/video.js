@@ -2,7 +2,11 @@ import videofile from "../models/videofile.js";
 import Ffmpeg from "fluent-ffmpeg";
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 // import videojs from 'video.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const uploadvideo = async (req, res) => {
     try {
@@ -83,45 +87,31 @@ export const uploadvideo = async (req, res) => {
 export const getvideos = async (req, res) => {
     try {
         // Get videos from database
-        const videos = await videofile.find();
-        console.log("Found videos in DB:", videos.length); // Debug log
-        
-        // Get all files from uploads directory
-        const uploadsDir = path.join(process.cwd(), 'uploads');
-        
-        // Create uploads directory if it doesn't exist
-        if (!fs.existsSync(uploadsDir)) {
-            fs.mkdirSync(uploadsDir, { recursive: true });
-        }
+        const dbVideos = await videofile.find();
+        console.log('Found videos in DB:', dbVideos.length);
 
+        // Get videos from uploads folder
+        const uploadsDir = path.join(__dirname, '..', 'uploads');
         const files = fs.readdirSync(uploadsDir)
-            .filter(file => {
-                const filePath = path.join(uploadsDir, file);
-                return fs.statSync(filePath).isFile() && 
-                       file.match(/\.(mp4|webm|mov)$/i);
-            })
+            .filter(file => file.match(/\.(mp4|webm|mov)$/i))
             .map(file => ({
                 filename: file,
-                filepath: `/video/stream/${file}`,
                 videotitle: file.split('.')[0],
+                filepath: `/uploads/${file}`,
                 createdAt: fs.statSync(path.join(uploadsDir, file)).ctime
             }));
+        console.log('Found files in uploads:', files.length);
 
-        console.log("Found files in uploads:", files.length); // Debug log
+        // Combine both sources
+        const allVideos = [
+            ...dbVideos,
+            ...files.filter(file => !dbVideos.some(dbVideo => dbVideo.filename === file.filename))
+        ];
+        console.log('Total videos to send:', allVideos.length);
 
-        // Merge DB videos with file system videos
-        const allVideos = [...videos];
-        
-        files.forEach(file => {
-            if (!videos.find(v => v.filename === file.filename)) {
-                allVideos.push(file);
-            }
-        });
-
-        console.log("Total videos to send:", allVideos.length); // Debug log
         res.status(200).json(allVideos);
     } catch (error) {
-        console.error("Error in getvideos:", error);
+        console.error('Error in getvideos:', error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -129,14 +119,14 @@ export const getvideos = async (req, res) => {
 // Add a streaming endpoint
 export const streamVideo = async (req, res) => {
     try {
-        const filename = req.params.filename;
-        const filePath = path.join(process.cwd(), 'uploads', filename);
-        
-        if (!fs.existsSync(filePath)) {
+        const { filename } = req.params;
+        const videoPath = path.join(__dirname, '..', 'uploads', filename);
+
+        if (!fs.existsSync(videoPath)) {
             return res.status(404).json({ message: "Video not found" });
         }
 
-        const stat = fs.statSync(filePath);
+        const stat = fs.statSync(videoPath);
         const fileSize = stat.size;
         const range = req.headers.range;
 
@@ -145,7 +135,7 @@ export const streamVideo = async (req, res) => {
             const start = parseInt(parts[0], 10);
             const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
             const chunksize = (end - start) + 1;
-            const file = fs.createReadStream(filePath, { start, end });
+            const file = fs.createReadStream(videoPath, { start, end });
             const head = {
                 'Content-Range': `bytes ${start}-${end}/${fileSize}`,
                 'Accept-Ranges': 'bytes',
@@ -160,10 +150,10 @@ export const streamVideo = async (req, res) => {
                 'Content-Type': 'video/mp4',
             };
             res.writeHead(200, head);
-            fs.createReadStream(filePath).pipe(res);
+            fs.createReadStream(videoPath).pipe(res);
         }
     } catch (error) {
-        console.error("Error streaming video:", error);
+        console.error('Error in streamVideo:', error);
         res.status(500).json({ message: error.message });
     }
 };
