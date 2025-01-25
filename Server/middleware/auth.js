@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import User from '../models/auth.js'
 
 const auth = async (req, res, next) => {
   try {
@@ -9,12 +10,19 @@ const auth = async (req, res, next) => {
     }
 
     const decodedData = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decodedData?.id;
     
+    // Fetch the complete user data and attach it to req
+    const user = await User.findById(decodedData.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    req.user = user;
+    req.userId = user._id;
     next();
   } catch (error) {
     console.error("Auth middleware error:", error);
-    return res.status(401).json({ message: "Invalid credentials" });
+    res.status(401).json({ message: "Authentication failed" });
   }
 };
 

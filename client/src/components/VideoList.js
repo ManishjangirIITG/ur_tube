@@ -32,27 +32,32 @@ const VideoList = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
       {videos.map((video) => (
-        <Link to={`/video/${video._id}`} key={video._id || video.filename} className="hover:opacity-90">
+        <Link to={`/uploads/${video._id}`} key={video._id} className="hover:opacity-90">
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <video 
               className="w-full h-48 object-cover"
               preload="metadata"
             >
               <source 
-                src={`http://localhost:5000/uploads/${video.filename}`}
-                type="video/mp4"
+                src={`http://localhost:5000/uploads/stream/${video.filename}`}
+                type={video.filetype || 'video/mp4'}
               />
             </video>
             <div className="p-4">
-              <h3 className="font-semibold text-lg">{video.videotitle || video.title || video.filename}</h3>
+              <h3 className="font-semibold text-lg">{video.videotitle}</h3>
               {video.uploadedBy && (
                 <p className="text-gray-600 text-sm">
                   {video.uploadedBy.username}
                 </p>
               )}
-              <p className="text-gray-500 text-sm">
-                {new Date(video.createdAt).toLocaleDateString()}
+              <p className="text-gray-500 text-sm mt-1">
+                {video.views} views • {new Date(video.createdAt).toLocaleDateString()}
               </p>
+              {video.description && (
+                <p className="text-gray-600 text-sm mt-2 line-clamp-2">
+                  {video.description}
+                </p>
+              )}
             </div>
           </div>
         </Link>

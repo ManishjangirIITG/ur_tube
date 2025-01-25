@@ -1,10 +1,23 @@
 import mongoose from "mongoose";
 
-const userschema=mongoose.Schema({
-    email:{type:String,require:true,unique:true},
-    name:{type:String},
-    desc:{type:String},
-    joinedon:{type:Date,default:Date.now}
-})
+const userSchema = new mongoose.Schema({
+    email: {
+        type: String,
+        required: true
+    },
+    name: {
+        type: String
+    },
+    desc: {
+        type: String
+    },
+    joinedOn: {
+        type: Date,
+        default: Date.now
+    }
+});
 
-export default mongoose.model("User",userschema)
+// Check if model already exists before creating
+const User = mongoose.models.User || mongoose.model('User', userSchema);
+
+export default User;

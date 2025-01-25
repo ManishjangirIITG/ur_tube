@@ -3,7 +3,7 @@ import * as api from '../Api/index'
 export const uploadvideo = (videoData) => async (dispatch) => {
     try {
         console.log("Attempting to upload video...");
-        const { data } = await api.uploadvideo(videoData);
+        const { data } = await api.uploadVideo(videoData);
         console.log("Upload response:", data);
         
         dispatch({ 

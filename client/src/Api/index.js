@@ -85,49 +85,37 @@ export const login = (authdata) => API.post("/user/login", authdata);
 export const updatechaneldata = (id, updatedata) => API.patch(`/user/update/${id}`, updatedata)
 export const fetchallchannel = () => API.get("/user/getallchannel");
 
-export const uploadvideo = async (fileData) => {
-  try {
-    const token = localStorage.getItem('Profile');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
+export const uploadVideo = async (formData) => {
+    try {
+        const profileData = localStorage.getItem('Profile');
+        if (!profileData) {
+            throw new Error('No authentication data found');
+        }
 
-    const config = {
-      headers: {
-        'Authorization': `Bearer ${JSON.parse(token)?.token}`,
-        'Content-Type': 'multipart/form-data'
-      },
-      onUploadProgress: (progressEvent) => {
-        const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-        console.log('Upload Progress:', progress);
-      },
-      maxContentLength: 100 * 1024 * 1024, // 100MB limit
-      maxBodyLength: 100 * 1024 * 1024 // 100MB limit
-    };
-    
-    console.log('Sending video upload request...');
-    console.log('FormData contents:', Array.from(fileData.entries()));
-    
-    const { data } = await API.post("/video/uploadvideo", fileData, config);
-    console.log('Upload response from server:', data);
-    return data;
-  } catch (error) {
-    console.error('Error in video upload:', error);
-    
-    // Handle specific error cases
-    if (error.response?.status === 413) {
-      throw {
-        message: 'File size too large. Maximum size is 100MB.',
-        status: 413
-      };
+        const { token } = JSON.parse(profileData);
+        
+        const config = {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data'
+            },
+            onUploadProgress: (progressEvent) => {
+                const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                console.log('Upload Progress:', progress);
+            },
+            maxContentLength: 100 * 1024 * 1024, // 100MB limit
+            maxBodyLength: 100 * 1024 * 1024 // 100MB limit
+        };
+
+        const response = await API.post('/video/uploadvideo', formData, config);
+        return response.data;
+    } catch (error) {
+        console.error('Upload error:', error);
+        if (error.response?.status === 413) {
+            throw new Error('File size too large. Maximum size is 100MB.');
+        }
+        throw error;
     }
-    
-    throw {
-      message: error.response?.data?.message || error.message || 'Error uploading video',
-      response: error.response?.data || 'Unknown error',
-      status: error.response?.status
-    };
-  }
 };
 
 export const getvideos = () => API.get("/video/videos");

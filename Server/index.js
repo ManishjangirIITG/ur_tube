@@ -17,19 +17,18 @@ import fileUpload from "express-fileupload";
 dotenv.config(); // Ensure this is at the top to load environment variables
 const app = express();
 
-// Increase timeout and add connection options
+// Connect to MongoDB first
 mongoose.connect(process.env.DB_URL, {
-    serverSelectionTimeoutMS: 15000, // Increase from default 10000
+    serverSelectionTimeoutMS: 15000,
     socketTimeoutMS: 45000,
     connectTimeoutMS: 15000,
-    // useNewUrlParser: true,
-    // useUnifiedTopology: true,
 })
 .then(() => {
     console.log('Connected to MongoDB successfully');
 })
 .catch((err) => {
     console.error('MongoDB connection error:', err);
+    process.exit(1);
 });
 
 // CORS configuration with specific options

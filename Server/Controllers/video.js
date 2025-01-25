@@ -13,55 +13,63 @@ export const uploadvideo = async (req, res) => {
         console.log("Processing upload request...");
         console.log("Request body:", req.body);
         console.log("Request file:", req.file);
+        console.log("User:", req.user);
         
         if (!req.file) {
-            return res.status(400).json({ 
-                message: "No video file provided" 
-            });
+            return res.status(400).json({ message: "No video file provided" });
+        }
+
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({ message: "User not authenticated" });
         }
 
         // Validate file type
-        if (!req.file.mimetype.startsWith('video/')) {
-            // Remove the uploaded file
-            fs.unlinkSync(req.file.path);
-            return res.status(400).json({
-                message: "Invalid file type. Only video files are allowed."
-            });
-        }
+        // if (!req.file.mimetype.startsWith('video/')) {
+        //     // Remove the uploaded file
+        //     fs.unlinkSync(req.file.path);
+        //     return res.status(400).json({
+        //         message: "Invalid file type. Only video files are allowed."
+        //     });
+        // }
 
-        // Validate required fields
-        if (!req.body.title) {
-            // Remove the uploaded file
-            fs.unlinkSync(req.file.path);
-            return res.status(400).json({
-                message: "Title is required"
-            });
-        }
+        // // Validate required fields
+        // if (!req.body.title) {
+        //     // Remove the uploaded file
+        //     fs.unlinkSync(req.file.path);
+        //     return res.status(400).json({
+        //         message: "Title is required"
+        //     });
+        // }
 
+        // Generate a unique filename
+        const fileExt = path.extname(req.file.originalname);
+        const uniqueFilename = `${Date.now()}-${Math.random().toString(36).substring(7)}${fileExt}`;
+        
         const newVideo = new videofile({
-            videotitle: req.body.title,
+            videotitle: req.body.title || 'Untitled',
             description: req.body.description || '',
-            filename: req.file.originalname,
-            filepath: req.file.path,
+            filename: uniqueFilename,
+            filepath: `/uploads/${uniqueFilename}`,
             filetype: req.file.mimetype,
             filesize: req.file.size,
-            videochanel: req.body.channel,
-            uploader: req.body.Uploader,
+            videochanel: req.body.channel || req.user._id.toString(),
+            uploadedBy: req.user._id,
             createdAt: new Date()
         });
 
-        console.log("Attempting to save video:", newVideo);
-        const savedVideo = await newVideo.save();
-        console.log("Video saved successfully:", savedVideo);
+        // Rename the file to use the unique filename
+        const newPath = path.join(path.dirname(req.file.path), uniqueFilename);
+        fs.renameSync(req.file.path, newPath);
 
+        const savedVideo = await newVideo.save();
+        
         res.status(201).json({
             message: "Video uploaded successfully",
             data: savedVideo
         });
     } catch (error) {
         console.error("Error in uploadvideo controller:", error);
-        
-        // Clean up uploaded file if there's an error
+        // Clean up the uploaded file if there's an error
         if (req.file && req.file.path) {
             try {
                 fs.unlinkSync(req.file.path);
@@ -69,14 +77,6 @@ export const uploadvideo = async (req, res) => {
                 console.error("Error removing uploaded file:", unlinkError);
             }
         }
-
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({
-                message: "Invalid video data",
-                error: error.message
-            });
-        }
-        
         res.status(500).json({ 
             message: "Error uploading video",
             error: error.message 
@@ -86,30 +86,56 @@ export const uploadvideo = async (req, res) => {
 
 export const getvideos = async (req, res) => {
     try {
-        // Get videos from database
-        const dbVideos = await videofile.find();
+        // Get videos from database with populated user data
+        const dbVideos = await videofile.find()
+            .populate('uploadedBy', 'username email')
+            .lean();
         console.log('Found videos in DB:', dbVideos.length);
 
         // Get videos from uploads folder
         const uploadsDir = path.join(__dirname, '..', 'uploads');
         const files = fs.readdirSync(uploadsDir)
-            .filter(file => file.match(/\.(mp4|webm|mov)$/i))
-            .map(file => ({
-                filename: file,
-                videotitle: file.split('.')[0],
-                filepath: `/uploads/${file}`,
-                createdAt: fs.statSync(path.join(uploadsDir, file)).ctime
-            }));
-        console.log('Found files in uploads:', files.length);
+            .filter(file => file.match(/\.(mp4|webm|mov)$/i));
 
-        // Combine both sources
-        const allVideos = [
-            ...dbVideos,
-            ...files.filter(file => !dbVideos.some(dbVideo => dbVideo.filename === file.filename))
-        ];
-        console.log('Total videos to send:', allVideos.length);
+        // Create or update MongoDB records for files in uploads folder
+        for (const file of files) {
+            const filePath = path.join(uploadsDir, file);
+            const stats = fs.statSync(filePath);
+            
+            // Check if video already exists in DB
+            const existingVideo = dbVideos.find(v => v.filename === file);
+            
+            if (!existingVideo) {
+                // Create new video record if it doesn't exist
+                const newVideo = new videofile({
+                    videotitle: file.split('.')[0],
+                    filename: file,
+                    filepath: `/uploads/${file}`,
+                    filetype: 'video/mp4',
+                    filesize: stats.size,
+                    uploadedBy: req.user?._id || null, // If available
+                    videochanel: 'Uncategorized',
+                    createdAt: stats.ctime
+                });
+                await newVideo.save();
+                dbVideos.push(newVideo);
+            }
+        }
 
-        res.status(200).json(allVideos);
+        // Remove DB entries for files that no longer exist
+        for (const video of dbVideos) {
+            const filePath = path.join(uploadsDir, video.filename);
+            if (!fs.existsSync(filePath)) {
+                await videofile.findByIdAndDelete(video._id);
+            }
+        }
+
+        // Fetch updated list
+        const updatedVideos = await videofile.find()
+            .populate('uploadedBy', 'username email')
+            .lean();
+
+        res.status(200).json(updatedVideos);
     } catch (error) {
         console.error('Error in getvideos:', error);
         res.status(500).json({ message: error.message });

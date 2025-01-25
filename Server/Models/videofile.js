@@ -6,9 +6,14 @@ const videoSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  description: {
+    type: String,
+    default: ''
+  },
   filename: {
     type: String,
-    required: true
+    required: true,
+    unique: true // Ensure unique filenames
   },
   filepath: {
     type: String,
@@ -22,11 +27,12 @@ const videoSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  videochanel: {
-    type: String,
+  uploadedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true
   },
-  uploader: {
+  videochanel: {
     type: String,
     required: true
   },
@@ -34,12 +40,16 @@ const videoSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  likes: {
-    type: [String],
-    default: []
+  likes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true
 });
 
-export default mongoose.model("VideoFiles", videoSchema)
+export default mongoose.model("VideoFile", videoSchema)
