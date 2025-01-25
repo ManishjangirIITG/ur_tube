@@ -5,18 +5,50 @@ import { googleLogout } from '@react-oauth/google';
 import "./Auth.css"
 import {useDispatch} from "react-redux"
 import { setcurrentuser } from '../../action/currentuser';
+import { API } from '../../Api/index';
+import { useNavigate } from 'react-router-dom';
 
 const Auth = ({ user, setauthbtn, seteditcreatechanelbtn }) => {
 
     
 
     const dispatch=useDispatch()
+    const navigate = useNavigate();
+
     const logout=()=>{
         dispatch(setcurrentuser(null))
         localStorage.clear()
         googleLogout()
     }
     
+    const googleSuccess = async (response) => {
+        try {
+            const token = response?.credential;
+            if (!token) {
+                throw new Error('Google Sign In was unsuccessful');
+            }
+
+            // Add retry logic for auth requests
+            let retries = 3;
+            while (retries > 0) {
+                try {
+                    const { data } = await API.post('/user/google', {
+                        token: token
+                    });
+                    dispatch({ type: 'AUTH', data });
+                    navigate('/');
+                    break;
+                } catch (error) {
+                    retries--;
+                    if (retries === 0) throw error;
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+        } catch (error) {
+            console.error('Google Sign In Error:', error);
+            alert('Failed to sign in with Google. Please try again.');
+        }
+    };
     
     return (
         <div className="Auth_container" onClick={() => setauthbtn(false)}>

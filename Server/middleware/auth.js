@@ -1,14 +1,21 @@
-import jwt from "jsonwebtoken"
+import jwt from 'jsonwebtoken'
 
-const auth=(req,res,next)=>{
-    try {
-        const token=req.headers.authorization.split(" ")[1];
-        let decodedata=jwt.verify(token,process.env.JWT_SECERT)
-        req.userid=decodedata?.id
-        next()
-    } catch (error) {
-        res.status(400).json("invalid credentials..")
-        return
+const auth = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ message: "No authentication token provided" });
     }
-}
-export default auth
+
+    const decodedData = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decodedData?.id;
+    
+    next();
+  } catch (error) {
+    console.error("Auth middleware error:", error);
+    return res.status(401).json({ message: "Invalid credentials" });
+  }
+};
+
+export default auth;

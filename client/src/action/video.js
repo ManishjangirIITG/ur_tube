@@ -1,16 +1,22 @@
-import * as api from "../Api";
+import * as api from '../Api/index'
 
-export const uploadvideo = (videodata) => async (dispatch) => {
+export const uploadvideo = (videoData) => async (dispatch) => {
     try {
-        const { filedata} = videodata;
-        console.log(filedata)
-        const { data } = await api.uploadvideo(filedata)
-        dispatch({ type: 'POST_VIDEO', data })
-        dispatch(getallvideo())
+        console.log("Attempting to upload video...");
+        const { data } = await api.uploadvideo(videoData);
+        console.log("Upload response:", data);
+        
+        dispatch({ 
+            type: 'POST_VIDEO', 
+            payload: data 
+        });
+        
+        return data; // Return the data so we can handle success in the component
     } catch (error) {
-        alert(error.response.data.message)
+        console.error("Error in upload action:", error);
+        throw error; // Re-throw to handle in component
     }
-};
+}
 
 export const getallvideo = () => async (dispatch) => {
     try {

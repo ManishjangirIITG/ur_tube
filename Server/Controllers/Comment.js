@@ -1,4 +1,4 @@
-import comment from "../Models/comment.js";
+import comment from "../models/comment.js";
 import mongoose from "mongoose";
 
 export const postcomment = async (req, res) => {

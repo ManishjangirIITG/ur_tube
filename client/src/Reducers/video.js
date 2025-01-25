@@ -1,7 +1,7 @@
-const videoreducer=(state={data:null},action)=>{
+const videoReducer = (state = { videos: [] }, action) => {
     switch (action.type) {
         case 'POST_VIDEO':
-            return {...state};
+            return { ...state, videos: [...state.videos, action.payload] }
         case 'POST_LIKE':
             return {...state};
         case 'POST_VIEWS':
@@ -9,7 +9,8 @@ const videoreducer=(state={data:null},action)=>{
         case 'FETCH_ALL_VIDEOS':
             return {...state,data:action.payload};
         default:
-            return state;
+            return state
     }
 }
-export default videoreducer
+
+export default videoReducer

@@ -1,4 +1,4 @@
-import videofile from "../Models/videofile.js";
+import videofile from "../models/videofile.js";
 import mongoose from "mongoose";
 export const viewscontroller = async (req, res) => {
     const { id: _id } = req.params;

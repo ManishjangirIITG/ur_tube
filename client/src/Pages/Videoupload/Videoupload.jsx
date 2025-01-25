@@ -3,7 +3,7 @@ import './Videoupload.css'
 import { buildStyles, CircularProgressbar } from "react-circular-progressbar"
 import { useSelector, useDispatch } from 'react-redux'
 import { uploadvideo } from '../../action/video'
-import axios from 'axios'
+import { useNavigate } from 'react-router-dom'
 
 const Videoupload = ({ setvideouploadpage }) => {
   const [title, setTitle] = useState('');
@@ -12,6 +12,7 @@ const Videoupload = ({ setvideouploadpage }) => {
   // const [progress, setprogress] = useState(0)
   const dispatch = useDispatch();
   const currentuser = useSelector(state => state.currentuserreducer);
+  const navigate = useNavigate();
 
   const handleFileChange = (e) => {
     setVideoFile(e.target.files[0])
@@ -19,39 +20,37 @@ const Videoupload = ({ setvideouploadpage }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!videoFile) {
-      alert('Please select a video file');
+    if (!title || !videoFile) {
+      alert("Please enter a title and select a video file");
       return;
     }
 
+    // Add file size check
+    const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB limit
+    if (videoFile.size > MAX_FILE_SIZE) {
+      alert("File size exceeds 100MB limit");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("videoFile", videoFile);
+    formData.append("channel", currentuser?.result?._id);
+    formData.append("Uploader", currentuser?.result?.name);
+
     try {
-      const formData = new FormData();
-      formData.append('file', videoFile);
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('channel', currentuser.result._id);
-      formData.append('uploader', currentuser.result.name);
-
-      // Use axios directly instead of dispatch for better error handling
-      const response = await axios.post('http://localhost:5000/video/uploadvideo', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${JSON.parse(localStorage.getItem("Profile")).token}`
-        },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          console.log('Upload Progress:', percentCompleted);
-        }
-      });
-
-      if (response.data) {
-        alert('Video uploaded successfully!');
-        setvideouploadpage(false);
+      console.log("Attempting to upload video...");
+      const response = await dispatch(uploadvideo(formData));
+      console.log("Upload response:", response);
+      if (response && response.data) {
+        alert("Video uploaded successfully!");
+        navigate('/');
       }
     } catch (error) {
-      console.error('Upload error:', error);
-      alert('Error uploading video: ' + (error.response?.data?.message || error.message));
+      console.error("Upload error details: ", error);
+      const errorMessage = error.message || "Error uploading video. Please try again.";
+      alert(errorMessage);
     }
   };
 

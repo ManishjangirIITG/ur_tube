@@ -1,4 +1,4 @@
-import likedvideo from "../Models/likevideo.js"
+import likedvideo from "../models/likevideo.js"
 
 export const likedvideocontroller = async (req, res) => {
     const likedvidedata = req.body;

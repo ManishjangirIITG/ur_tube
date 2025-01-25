@@ -1,4 +1,4 @@
-import history from "../Models/history.js";
+import history from "../models/history.js";
 
 export const historycontroller=async(req,res)=>{
     const historydata=req.body;
